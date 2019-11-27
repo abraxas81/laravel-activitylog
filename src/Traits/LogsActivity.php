@@ -2,6 +2,7 @@
 
 namespace Spatie\Activitylog\Traits;
 
+use Fico7489\Laravel\Pivot\Traits\PivotEventTrait;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Spatie\Activitylog\ActivityLogger;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 trait LogsActivity
 {
-    use DetectsChanges;
+    use DetectsChanges, PivotEventTrait;
 
     protected $enableLoggingModelsEvents = true;
 
@@ -108,6 +109,8 @@ trait LogsActivity
             'created',
             'updated',
             'deleted',
+            'pivotAttached',
+            'pivotDetached'
         ]);
 
         if (collect(class_uses_recursive(static::class))->contains(SoftDeletes::class)) {

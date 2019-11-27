@@ -5,6 +5,7 @@ namespace Spatie\Activitylog\Traits;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Collection;
 use Spatie\Activitylog\Exceptions\CouldNotLogChanges;
 
 trait DetectsChanges
@@ -160,6 +161,10 @@ trait DetectsChanges
         $relatedModelName = Str::camel($relatedModelName);
 
         $relatedModel = $model->$relatedModelName ?? $model->$relatedModelName();
+
+        if ($relatedModel instanceof Collection){
+            return ["{$relatedModelName}.{$relatedAttribute}" => $relatedModel->pluck($relatedAttribute)];
+        }
 
         return ["{$relatedModelName}.{$relatedAttribute}" => $relatedModel->$relatedAttribute ?? null];
     }
