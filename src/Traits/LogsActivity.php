@@ -110,7 +110,8 @@ trait LogsActivity
             'updated',
             'deleted',
             'pivotAttached',
-            'pivotDetached'
+            'pivotDetached',
+            'pivotUpdated'
         ]);
 
         if (collect(class_uses_recursive(static::class))->contains(SoftDeletes::class)) {

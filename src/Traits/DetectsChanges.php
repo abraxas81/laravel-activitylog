@@ -14,16 +14,41 @@ trait DetectsChanges
 
     protected static function bootDetectsChanges()
     {
+        $testing = static::eventsToBeRecorded();
+
         if (static::eventsToBeRecorded()->contains('updated')) {
             static::updating(function (Model $model) {
+                static::handleOldValues($model);
+            });
 
-                //temporary hold the original attributes on the model
-                //as we'll need these in the updating event
-                $oldValues = (new static)->setRawAttributes($model->getOriginal());
-
-                $model->oldAttributes = static::logChanges($oldValues);
+        }
+        if (static::eventsToBeRecorded()->contains('pivotAttached')) {
+            static::pivotAttaching(function (Model $model) {
+                static::handleOldValues($model);
             });
         }
+
+        if (static::eventsToBeRecorded()->contains('pivotDetached')) {
+            static::pivotDetaching(function (Model $model) {
+                static::handleOldValues($model);
+            });
+        }
+
+        if (static::eventsToBeRecorded()->contains('pivotUpdated')) {
+            static::pivotUpdating(function (Model $model) {
+                static::handleOldValues($model);
+            });
+        }
+
+    }
+
+    private static function handleOldValues(Model $model)
+    {
+        //temporary hold the original attributes on the model
+        //as we'll need these in the updating event
+        $oldValues = (new static)->setRawAttributes($model->getOriginal());
+
+        $model->oldAttributes = static::logChanges($oldValues);
     }
 
     public function attributesToBeLogged(): array
@@ -91,7 +116,7 @@ trait DetectsChanges
                 : $this
         );
 
-        if (static::eventsToBeRecorded()->contains('updated') && $processingEvent == 'updated') {
+        if (static::eventsToBeRecorded()->contains('updated') && ($processingEvent == 'updated' || $processingEvent == 'pivotAttached' || $processingEvent == 'pivotDetached'|| $processingEvent == 'pivotUpdated')) {
             $nullProperties = array_fill_keys(array_keys($properties['attributes']), null);
 
             $properties['old'] = array_merge($nullProperties, $this->oldAttributes);
@@ -100,17 +125,27 @@ trait DetectsChanges
         }
 
         if ($this->shouldLogOnlyDirty() && isset($properties['old'])) {
-            $properties['attributes'] = array_udiff_assoc(
-                $properties['attributes'],
-                $properties['old'],
-                function ($new, $old) {
-                    if ($old === null || $new === null) {
-                        return $new === $old ? 0 : 1;
-                    }
 
-                    return $new <=> $old;
+            foreach ($properties['attributes'] as $key=>$value){
+                if ($properties['old'][$key] === $value && !is_array($value)){
+                    unset($properties['attributes'][$key]);
                 }
-            );
+
+                if ($value instanceof \Illuminate\Support\Collection) {
+
+                    if (Str::contains($key, '.')) {
+
+                        $new = $value->count() > 0 ? $value->all() : [];
+                        $old = $properties['old'][$key]->count() > 0 ? $properties['old'][$key]->all() : [];
+
+                        $difference = array_diff($new, $old);
+
+                        if (empty($difference)){
+                            unset($properties['attributes'][$key]);
+                        }
+                    }
+                }
+            }
             $properties['old'] = collect($properties['old'])
                 ->only(array_keys($properties['attributes']))
                 ->all();

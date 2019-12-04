@@ -92,6 +92,20 @@ class ActivityLogger
 
     public function withProperties($properties)
     {
+        $attributes = isset($properties['attributes']) ? $properties['attributes'] : [];
+
+        foreach ($attributes as $key=>$property){
+
+            if (\Illuminate\Support\Str::contains($key, '.')) {
+
+                [$relatedModelName, $relatedAttribute] = explode('.', $key);
+
+                if ($properties['attributes'][$key] instanceof Collection){
+                    $properties['attributes'][$key] = $properties['attributes'][$key]->pluck($relatedAttribute);
+                }
+            }
+        }
+
         $this->getActivity()->properties = collect($properties);
 
         return $this;
