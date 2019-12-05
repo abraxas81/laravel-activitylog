@@ -138,7 +138,11 @@ trait DetectsChanges
                         $new = $value->count() > 0 ? $value->all() : [];
                         $old = $properties['old'][$key]->count() > 0 ? $properties['old'][$key]->all() : [];
 
-                        $difference = array_diff($new, $old);
+                        if (count($new) > count($old)){
+                            $difference = array_diff($new, $old);
+                        }else{
+                            $difference = array_diff($old, $new);
+                        }
 
                         if (empty($difference)){
                             unset($properties['attributes'][$key]);

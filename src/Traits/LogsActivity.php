@@ -5,6 +5,7 @@ namespace Spatie\Activitylog\Traits;
 use Fico7489\Laravel\Pivot\Traits\PivotEventTrait;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Spatie\Activitylog\ActivityLogger;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -148,5 +149,21 @@ trait LogsActivity
 
         //do not log update event if only ignored attributes are changed
         return (bool) count(Arr::except($this->getDirty(), $this->attributesToBeIgnored()));
+    }
+
+    public function getRelatedAttributes()
+    {
+        $relations = [];
+
+        if (isset(self::$logAttributes)){
+            foreach (self::$logAttributes as $attribute){
+                if(Str::contains($attribute, '.')){
+                    $related = explode('.', $attribute);
+                    $relations[array_shift($related)] = array_shift($related);
+                }
+            }
+        }
+
+        return $relations;
     }
 }
